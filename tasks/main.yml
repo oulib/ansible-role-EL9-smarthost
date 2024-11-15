@@ -1,0 +1,78 @@
+---
+# tasks file for OULibOps.EL9-postfix-smarthost
+
+- name: Sendmail should not be installed
+  ansible.builtin.dnf:
+    name: sendmail
+    state: removed
+  become: true
+
+- name: Postfix is our base mail system
+  ansible.builtin.dnf:
+    name: postfix
+    state: installed
+  become: true
+
+- name: Cyrus SASL libraries are needed for SMTP authentication
+  ansible.builtin.dnf:
+    name:
+      - cyrus-sasl
+      - cyrus-sasl-lib
+      - cyrus-sasl-plain
+    state: installed
+  become: true
+
+- name: s-nail client is neede for testing
+  ansible.builtin.dnf:
+    name: s-nail
+    state: installed
+  become: true
+
+- name: Postfix smarthost config should be in place
+  template:
+    src: main.cf.j2
+    dest: /etc/postfix/main.cf
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+
+
+- name: Postfix should re-write sender addresses (usually all as no-reply)
+  template:
+    src: sender_canonical.j2
+    dest: /etc/postfix/sender_canonical
+    mode: 0644
+    owner: root
+    group: root
+  become: true
+
+- name: Postfix sender_canonical.db should be up-to-date
+  command: postmap /etc/postfix/sender_canonical
+  args:
+    chdir: /etc/postfix
+    creates: /etc/postfix/sender_canonical.db
+  become: true
+
+
+- name: Postfix should have credentials for SMTP upstream.
+  template:
+    src: sasl_passwd.j2
+    dest: /etc/postfix/sasl_passwd
+    mode: 0600
+  become: true
+
+- name: Postfix  sasl_passwd.db should be up-to-date
+  command: postmap /etc/postfix/sasl_passwd
+  args:
+    chdir: /etc/postfix
+    creates: /etc/postfix/sasl_passwd.db
+  become: true
+
+# TODO, shouldn't restart postfix until after config changes, and only if needed.
+- name: Postfix should run on boot
+  service:
+    name: postfix
+    state: restarted
+    enabled: yes
+  become: true
