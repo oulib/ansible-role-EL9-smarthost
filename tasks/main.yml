@@ -22,12 +22,6 @@
     state: installed
   become: true
 
-- name: s-nail client is neede for testing
-  ansible.builtin.dnf:
-    name: s-nail
-    state: installed
-  become: true
-
 - name: Postfix smarthost config should be in place
   template:
     src: main.cf.j2
@@ -37,6 +31,23 @@
     group: root
   become: true
 
+- name: We want to put support scripts in /opt
+  ansible.builtin.file:
+    path: /opt/oulib/smarthost/bin
+    state: directory
+    mode: 0775
+    owner: root
+    group: root
+  become: true
+
+- name: The mail-test.sh script should be present.
+  ansible.builtin.copy:
+    src: mail-test.sh
+    dest: /opt/oulib/smarthost/bin/mail-test.sh
+    mode: 0644
+    owner: root
+    group: root
+  become: true
 
 - name: Postfix should re-write sender addresses (usually all as no-reply)
   template:
@@ -70,7 +81,7 @@
   become: true
 
 # TODO, shouldn't restart postfix until after config changes, and only if needed.
-- name: Postfix should run on boot
+- name: Postfix should run on boot and restart after config changes.
   service:
     name: postfix
     state: restarted
