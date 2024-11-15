@@ -2,4 +2,4 @@
 - hosts: localhost
   remote_user: root
   roles:
-    - OULibOps.EL9-postfix-smarthost
+    - OULibOps.EL9-smarthost
